@@ -143,6 +143,29 @@ class WorkflowTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'human reviewed'):
             read_manifest(path)
 
+    def test_repair_preserves_labels_and_test_set(self):
+        from PIL import Image
+        source = self.root / 'source.png'
+        Image.new('RGB', (640, 320), 'green').save(source)
+        dest = self.root / 'patches'
+        gb.prepare(argparse.Namespace(nl=source, india=source, output=dest, size=64, limit=2))
+        manifest = dest / 'manifest.csv'
+        with manifest.open() as stream:
+            before = list(csv.DictReader(stream))
+        before[0]['label'] = 'built_up'
+        gb.write_csv(manifest, before)
+        args = argparse.Namespace(manifest=manifest, limit=1, target=5, model='test')
+        with patch.object(gb, 'claude_client', return_value=object()), patch.object(
+                gb, 'ask_image', return_value={'label': 'water', 'reason': 'lake'}) as ask:
+            gb.repair(args)
+        with manifest.open() as stream:
+            after = list(csv.DictReader(stream))
+        self.assertEqual(ask.call_count, 2)
+        self.assertEqual(after[0]['label'], 'built_up')
+        self.assertEqual([r['path'] for r in before if r['split'] == 'test'],
+                         [r['path'] for r in after if r['split'] == 'test'])
+        self.assertTrue(all(r['split'] == 'train' for r in after[len(before):]))
+
     def test_report_uses_measured_values(self):
         data = {'results': {'nl_only': {'evaluation': {'IN': {'samples': 15, 'accuracy': 0.6, 'macro_f1': 0.5}}}}}
         source = self.root / 'results.json'

@@ -5,6 +5,7 @@ import csv
 import getpass
 import json
 import os
+import random
 from pathlib import Path
 
 from train import CLASSES, read_manifest
@@ -86,23 +87,25 @@ def prepare(args):
             # Left half for training, right half for testing, with one patch buffer.
             cut = (width // args.size // 2) * args.size
             counts = {'train': 0, 'test': 0}
-            for y in range(0, height - args.size + 1, args.size):
-                for x in range(0, width - args.size + 1, args.size):
-                    if x < cut - args.size:
-                        split = 'train'
-                    elif x >= cut + args.size:
-                        split = 'test'
-                    else:
-                        continue
-                    if counts[split] >= args.limit:
-                        continue
-                    name = f'images/{country}_{x}_{y}.png'
-                    dest = args.output / name
-                    dest.parent.mkdir(parents=True, exist_ok=True)
-                    image.crop((x, y, x + args.size, y + args.size)).save(dest)
-                    rows.append(dict(path=name, country=country, label='', split=split,
-                                     group=f'{country}-{split}'))
-                    counts[split] += 1
+            coordinates = [(x, y) for y in range(0, height - args.size + 1, args.size)
+                           for x in range(0, width - args.size + 1, args.size)]
+            random.Random(42).shuffle(coordinates)
+            for x, y in coordinates:
+                if x < cut - args.size:
+                    split = 'train'
+                elif x >= cut + args.size:
+                    split = 'test'
+                else:
+                    continue
+                if counts[split] >= args.limit:
+                    continue
+                name = f'images/{country}_{x}_{y}.png'
+                dest = args.output / name
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                image.crop((x, y, x + args.size, y + args.size)).save(dest)
+                rows.append(dict(path=name, country=country, label='', split=split,
+                                 group=f'{country}-{split}'))
+                counts[split] += 1
             if not all(counts.values()):
                 raise ValueError(f'{path} is too small for spatial train/test separation')
         metadata = path.with_suffix('.json')
@@ -164,6 +167,58 @@ def ask_image(client, model, path):
                 print('Claude reply was incomplete or invalid. Retrying once with a larger reply limit.')
     raise ValueError('Claude did not return a complete label after two attempts. Previous labels are saved. '
                      'Run label again to retry this patch, or omit --claude to label manually.')
+
+
+def repair(args):
+    """Search new training patches only. Never inspect or relabel the held-out test set."""
+    from PIL import Image
+    with args.manifest.open(encoding='utf-8') as stream:
+        rows = list(csv.DictReader(stream))
+    provenance = json.loads(args.manifest.with_name('provenance.json').read_text())
+    existing = {r['path'] for r in rows}
+    client = None
+    for country in ('NL', 'IN'):
+        counts = {label: sum(r['country'] == country and r['split'] == 'train' and r['label'] == label
+                            for r in rows) for label in CLASSES}
+        print(f'{country} training counts: {counts}')
+        source_path = Path(next(p['source_file'] for p in provenance if p['country'] == country))
+        if not source_path.exists():
+            raise ValueError(f'Source image not found: {source_path}. Run from the project directory.')
+        first = next(r for r in rows if r['country'] == country)
+        with Image.open(args.manifest.parent / first['path']) as patch_image:
+            size = patch_image.width
+        with Image.open(source_path) as source:
+            image = source.convert('RGB')
+            cut = (image.width // size // 2) * size
+            coordinates = [(x, y) for y in range(0, image.height - size + 1, size)
+                           for x in range(0, cut - size, size)
+                           if f'images/{country}_{x}_{y}.png' not in existing]
+            random.Random(42).shuffle(coordinates)
+            attempts = 0
+            for x, y in coordinates:
+                if min(counts.values()) >= args.target or attempts >= args.limit:
+                    break
+                name = f'images/{country}_{x}_{y}.png'
+                dest = args.manifest.parent / name
+                image.crop((x, y, x + size, y + size)).save(dest)
+                row = dict(path=name, country=country, label='', split='train', group=f'{country}-train')
+                rows.append(row)
+                write_csv(args.manifest, rows)  # Keep the patch even if the API call fails.
+                if client is None:
+                    client = claude_client()
+                    args.model = resolve_model(client, args.model)
+                result = ask_image(client, args.model, dest)
+                row.update(label=result['label'], label_source='claude', label_model=args.model)
+                write_csv(args.manifest, rows)
+                attempts += 1
+                if result['label'] in counts:
+                    counts[result['label']] += 1
+                print(f'{country} {name}: {result["label"]}; counts {counts}', flush=True)
+        if min(counts.values()) < args.target:
+            print(f'{country}: target not reached. More varied source imagery may be needed. '
+                  'Do not train until every class is present in both countries.')
+        else:
+            print(f'{country}: training target reached.')
 
 
 def auto_label(args):
@@ -302,6 +357,11 @@ def main():
     p.add_argument('--size', type=int, default=64)
     p.add_argument('--limit', type=int, default=90, help='Maximum patches per country per split')
     p.set_defaults(func=prepare)
+    p = commands.add_parser('repair', help='Search the full source for missing training classes with Claude')
+    p.add_argument('--manifest', type=Path, default=Path('data/patches/manifest.csv'))
+    p.add_argument('--limit', type=int, default=40, help='Maximum paid image requests per country, excluding retries')
+    p.add_argument('--target', type=int, default=5, help='Stop once every training class reaches this count')
+    p.set_defaults(func=repair)
     p = commands.add_parser('auto-label', help='Use Claude for unlabelled training images only')
     p.add_argument('--manifest', type=Path, default=Path('data/patches/manifest.csv'))
     p.add_argument('--limit', type=int, default=60, help='Maximum training images this run; may use paid calls')
@@ -325,11 +385,13 @@ def main():
     p.add_argument('--output', type=Path, default=Path('runs/report.md'))
     p.add_argument('--claude', action='store_true', help='Send metrics to Claude for paid commentary')
     p.set_defaults(func=report)
-    for name in ('label', 'report', 'auto-label'):
+    for name in ('label', 'report', 'auto-label', 'repair'):
         commands.choices[name].add_argument('--model', default=os.environ.get('CLAUDE_MODEL', 'auto'))
     args = parser.parse_args()
     if hasattr(args, 'limit') and args.limit < 1:
         parser.error('--limit must be positive')
+    if hasattr(args, 'target') and args.target < 1:
+        parser.error('--target must be positive')
     if hasattr(args, 'size') and args.size < 8:
         parser.error('--size must be at least 8')
     try:

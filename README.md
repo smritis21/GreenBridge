@@ -165,3 +165,13 @@ Source images use geographic coordinates, but the first version produces patch p
 - [EuroSAT background paper](https://arxiv.org/abs/1709.00029)
 
 Keep scene attribution and consult source data terms before redistributing imagery. Software dependencies and satellite data retain their own licences.
+
+## Repair an existing sample with missing training classes
+
+```powershell
+.\.venv312\Scripts\python.exe greenbridge.py repair --limit 40 --target 5
+```
+
+This searches unused patches across the original training half, in a fixed shuffled order. It keeps old labels and test patches unchanged. It stops per country when every training class has at least five usable examples, or after 40 new candidates. These are paid Claude image requests, with one retry possible per image. It saves each patch and label immediately. It does not guarantee the original image contains enough water or vegetation. If the target is not reached, inspect counts before spending more credits. Five examples only supports an initial smoke test.
+
+New prepare runs also sample across the full source instead of taking the top rows first.
