@@ -6,7 +6,7 @@ GreenBridge is a terminal-based satellite image classification project for Rotte
 
 ## What uses Claude?
 
-Claude suggests image labels and can explain your final metrics. You enter your Anthropic API key in a hidden terminal prompt. It is not written to disk. You can also set ANTHROPIC_API_KEY yourself. Your image patches are sent to Anthropic only when you use `label --claude`; `report --claude` sends the metrics JSON. Each call uses your API credits. Limits and cached suggestions help control spending.
+Claude suggests image labels and can explain your final metrics. You enter your Anthropic API key in a hidden terminal prompt. It is not written to disk. You can also set ANTHROPIC_API_KEY yourself. Your image patches are sent to Anthropic only when you use `label --claude`; `report --claude` sends the metrics JSON. Each call uses your API credits. Limits and cached suggestions help control spending. An incomplete or invalid label reply is retried once with a larger output limit, which may use another paid API call.
 
 The classifier you train is a pretrained ResNet-18 with a new three-class head. Claude API credits pay for Claude calls, not local PyTorch training, and the project does not fine-tune Claude. Running local training needs no API key. No training or paid API calls were run during development.
 

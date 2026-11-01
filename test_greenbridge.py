@@ -81,6 +81,29 @@ class WorkflowTests(unittest.TestCase):
             self.assertEqual(next(csv.DictReader(stream))['label'], '')
         self.assertTrue((self.root / 'claude_suggestions.json').exists())
 
+    def test_incomplete_claude_reply_is_retried(self):
+        from types import SimpleNamespace
+        from unittest.mock import Mock
+        image = self.root / 'image.png'
+        image.write_bytes(b'image')
+        create = Mock(side_effect=[
+            SimpleNamespace(content=[SimpleNamespace(type='text', text='{"label":')], stop_reason='max_tokens'),
+            SimpleNamespace(content=[SimpleNamespace(type='text', text='{"label":"water","reason":"A lake"}')], stop_reason='end_turn')])
+        client = SimpleNamespace(messages=SimpleNamespace(create=create))
+        self.assertEqual(gb.ask_image(client, 'test', image)['label'], 'water')
+        self.assertEqual(create.call_count, 2)
+        self.assertEqual(create.call_args.kwargs['max_tokens'], 2048)
+
+    def test_invalid_claude_replies_stop_after_two_attempts(self):
+        from types import SimpleNamespace
+        from unittest.mock import Mock
+        image = self.root / 'image.png'
+        image.write_bytes(b'image')
+        create = Mock(return_value=SimpleNamespace(content=[SimpleNamespace(type='text', text='broken')], stop_reason='end_turn'))
+        with self.assertRaisesRegex(ValueError, 'Previous labels are saved'):
+            gb.ask_image(SimpleNamespace(messages=SimpleNamespace(create=create)), 'test', image)
+        self.assertEqual(create.call_count, 2)
+
     def test_auto_model_uses_available_sonnet(self):
         from types import SimpleNamespace
         client = SimpleNamespace(models=SimpleNamespace(list=lambda **kw: [
