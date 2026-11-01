@@ -47,6 +47,45 @@ The project website explains the question, method, first results, limitations an
 
 Claude supplies training labels and optional explanations. It is not the model being trained. Its API calls use Anthropic credits; local classifier training does not.
 
+## Dataset source and preparation
+
+This is a **custom patch dataset built from public satellite imagery**, not a downloaded labelled benchmark. EuroSAT was mentioned as a possible learning resource but was not used in the recorded experiment.
+
+**Original imagery:** Copernicus Sentinel-2 Level-2A, accessed through the [Microsoft Planetary Computer Sentinel-2 L2A collection](https://planetarycomputer.microsoft.com/dataset/sentinel-2-l2a). The code searches the public STAC API and downloads small windows from its true-colour visual assets. These are 8-bit RGB images at 10 metres per pixel, not all Sentinel spectral bands.
+
+| Area | Acquisition time (UTC) | Crop bounds: west, south, east, north | Use |
+|---|---|---|---|
+| Rotterdam, Netherlands | 2024-08-12T10:46:29.024000Z | 4.4, 51.88, 4.55, 51.98 | Training and test |
+| Bengaluru, India | 2024-03-13T05:06:49.024000Z | 77.52, 12.9, 77.67, 13.0 | Training and test |
+| Rural area west of Bengaluru, India | 2024-03-13T05:06:49.024000Z | 77.25, 12.8, 77.4, 12.9 | Training only |
+
+### Exact scenes
+
+- **Rotterdam, Netherlands:** `S2B_MSIL2A_20240812T104629_R051_T31UET_20240812T134520`. Coordinate system: `EPSG:32631`.
+- **Bengaluru, India:** `S2B_MSIL2A_20240313T050649_R019_T43PGQ_20240313T171334`. Coordinate system: `EPSG:32643`.
+- **Rural area west of Bengaluru, India:** `S2B_MSIL2A_20240313T050649_R019_T43PGQ_20240313T171334`. Coordinate system: `EPSG:32643`.
+
+The two Indian crops come from the same satellite scene, but different geographic windows. The Netherlands and India acquisitions are in different months, which can introduce seasonal differences.
+
+### How the images became training data
+
+- The download searches the 2024 interval for scenes with less than 10% scene-wide cloud cover. This does not guarantee cloud-free patches.
+- Images are divided into non-overlapping 64 × 64 pixel patches, roughly 640 × 640 metres per patch at the source resolution.
+- Original city crops use their left half for training and right half for testing, with a two-patch gap. The separate rural Indian crop is training only and does not overlap the original Indian crop's bounding box.
+- The first preparation took the top rows first. Later repair samples unused training patches in shuffled order. New preparation runs shuffle across the full crop. The recorded experiment therefore reflects an evolving, non-random overall sample.
+- The three classes are vegetation, built-up land and water. Cloudy, blank or mixed/uncertain patches can be marked skip. Skipped and unreviewed rows are excluded.
+- Most training labels were generated using the Claude API. The labelling session selected `claude-sonnet-5-5`; per-image model names are stored locally where recorded. Earlier cached suggestions may use other recorded models.
+- Human labels were entered manually. Some human reviewers saw Claude suggestions, so this is not an independently annotated reference dataset. No expert ground-truth validation was performed.
+- The saved experiment records 201 Claude-labelled usable patches, 18 explicitly human-labelled usable patches and 23 older usable patches with a blank source field, across training and testing combined. These totals are not a training-only breakdown.
+- The joint run used 214 training patches; the Dutch-only run used 83. The fixed test set had 25 Dutch patches (21 vegetation, 3 built-up, 1 water) and 3 Indian patches (all built-up).
+- The pretrained ResNet-18 transform resizes, centre-crops and normalises RGB patches before the classifier sees them. The backbone is frozen and only the new classification head is trained. No Claude model is trained or fine-tuned.
+
+### Provenance, attribution and redistribution
+
+[Full source metadata](results/dataset-provenance.json) includes the exact scene identifiers, acquisition times, bounding boxes, source asset URLs, coordinate systems and crop transforms. These are unsigned public asset URLs, not API credentials. [Experiment JSON](results/experiment-01.json) records the seed, epoch count, class support and manifest hash. Raw imagery and trained weights are not uploaded to this repository. The local manifest is not included, so the published metadata alone is not enough to reproduce the exact selected patches and labels.
+
+Attribution: **Contains modified Copernicus Sentinel data (2024), accessed via Microsoft Planetary Computer.** Consult the [Sentinel data legal notice](https://sentinel.esa.int/documents/247904/690755/Sentinel_Data_Legal_Notice) and the collection terms before redistributing data. This project makes no claim of endorsement by Copernicus, ESA, Microsoft or Anthropic.
+
 ## First experiment
 
 Seed 42, five epochs per model. Dutch-only training used 83 images; joint training used 214.

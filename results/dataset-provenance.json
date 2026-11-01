@@ -1,0 +1,170 @@
+[
+  {
+    "area": "Rotterdam, Netherlands",
+    "use": "Training and test",
+    "country": "NL",
+    "scene_id": "S2B_MSIL2A_20240812T104629_R051_T31UET_20240812T134520",
+    "datetime": "2024-08-12T10:46:29.024000Z",
+    "bbox_wgs84": [
+      4.4,
+      51.88,
+      4.55,
+      51.98
+    ],
+    "asset": "https://sentinel2l2a01.blob.core.windows.net/sentinel2-l2/31/U/ET/2024/08/12/S2B_MSIL2A_20240812T104629_N0511_R051_T31UET_20240812T134520.SAFE/GRANULE/L2A_T31UET_A038830_20240812T105014/IMG_DATA/R10m/T31UET_20240812T104629_TCI_10m.tif",
+    "crs": "EPSG:32631",
+    "transform": [
+      10.0,
+      0.0,
+      596150.0,
+      0.0,
+      -10.0,
+      5759950.0
+    ],
+    "source": "Copernicus Sentinel-2 L2A via Microsoft Planetary Computer",
+    "license_links": [
+      {
+        "rel": "collection",
+        "type": "application/json",
+        "href": "https://planetarycomputer.microsoft.com/api/stac/v1/collections/sentinel-2-l2a"
+      },
+      {
+        "rel": "parent",
+        "type": "application/json",
+        "href": "https://planetarycomputer.microsoft.com/api/stac/v1/collections/sentinel-2-l2a"
+      },
+      {
+        "rel": "root",
+        "type": "application/json",
+        "href": "https://planetarycomputer.microsoft.com/api/stac/v1/"
+      },
+      {
+        "rel": "self",
+        "type": "application/geo+json",
+        "href": "https://planetarycomputer.microsoft.com/api/stac/v1/collections/sentinel-2-l2a/items/S2B_MSIL2A_20240812T104629_R051_T31UET_20240812T134520"
+      },
+      {
+        "rel": "license",
+        "href": "https://sentinel.esa.int/documents/247904/690755/Sentinel_Data_Legal_Notice"
+      },
+      {
+        "rel": "preview",
+        "href": "https://planetarycomputer.microsoft.com/api/data/v1/item/map?collection=sentinel-2-l2a&item=S2B_MSIL2A_20240812T104629_R051_T31UET_20240812T134520",
+        "title": "Map of item",
+        "type": "text/html"
+      }
+    ]
+  },
+  {
+    "area": "Bengaluru, India",
+    "use": "Training and test",
+    "country": "IN",
+    "scene_id": "S2B_MSIL2A_20240313T050649_R019_T43PGQ_20240313T171334",
+    "datetime": "2024-03-13T05:06:49.024000Z",
+    "bbox_wgs84": [
+      77.52,
+      12.9,
+      77.67,
+      13.0
+    ],
+    "asset": "https://sentinel2l2a01.blob.core.windows.net/sentinel2-l2/43/P/GQ/2024/03/13/S2B_MSIL2A_20240313T050649_N0510_R019_T43PGQ_20240313T171334.SAFE/GRANULE/L2A_T43PGQ_A036653_20240313T052012/IMG_DATA/R10m/T43PGQ_20240313T050649_TCI_10m.tif",
+    "crs": "EPSG:32643",
+    "transform": [
+      10.0,
+      0.0,
+      773350.0,
+      0.0,
+      -10.0,
+      1438650.0
+    ],
+    "source": "Copernicus Sentinel-2 L2A via Microsoft Planetary Computer",
+    "license_links": [
+      {
+        "rel": "collection",
+        "type": "application/json",
+        "href": "https://planetarycomputer.microsoft.com/api/stac/v1/collections/sentinel-2-l2a"
+      },
+      {
+        "rel": "parent",
+        "type": "application/json",
+        "href": "https://planetarycomputer.microsoft.com/api/stac/v1/collections/sentinel-2-l2a"
+      },
+      {
+        "rel": "root",
+        "type": "application/json",
+        "href": "https://planetarycomputer.microsoft.com/api/stac/v1/"
+      },
+      {
+        "rel": "self",
+        "type": "application/geo+json",
+        "href": "https://planetarycomputer.microsoft.com/api/stac/v1/collections/sentinel-2-l2a/items/S2B_MSIL2A_20240313T050649_R019_T43PGQ_20240313T171334"
+      },
+      {
+        "rel": "license",
+        "href": "https://sentinel.esa.int/documents/247904/690755/Sentinel_Data_Legal_Notice"
+      },
+      {
+        "rel": "preview",
+        "href": "https://planetarycomputer.microsoft.com/api/data/v1/item/map?collection=sentinel-2-l2a&item=S2B_MSIL2A_20240313T050649_R019_T43PGQ_20240313T171334",
+        "title": "Map of item",
+        "type": "text/html"
+      }
+    ]
+  },
+  {
+    "area": "Rural area west of Bengaluru, India",
+    "use": "Training only",
+    "country": "IN",
+    "scene_id": "S2B_MSIL2A_20240313T050649_R019_T43PGQ_20240313T171334",
+    "datetime": "2024-03-13T05:06:49.024000Z",
+    "bbox_wgs84": [
+      77.25,
+      12.8,
+      77.4,
+      12.9
+    ],
+    "asset": "https://sentinel2l2a01.blob.core.windows.net/sentinel2-l2/43/P/GQ/2024/03/13/S2B_MSIL2A_20240313T050649_N0510_R019_T43PGQ_20240313T171334.SAFE/GRANULE/L2A_T43PGQ_A036653_20240313T052012/IMG_DATA/R10m/T43PGQ_20240313T050649_TCI_10m.tif",
+    "crs": "EPSG:32643",
+    "transform": [
+      10.0,
+      0.0,
+      744150.0,
+      0.0,
+      -10.0,
+      1427300.0
+    ],
+    "source": "Copernicus Sentinel-2 L2A via Microsoft Planetary Computer",
+    "license_links": [
+      {
+        "rel": "collection",
+        "type": "application/json",
+        "href": "https://planetarycomputer.microsoft.com/api/stac/v1/collections/sentinel-2-l2a"
+      },
+      {
+        "rel": "parent",
+        "type": "application/json",
+        "href": "https://planetarycomputer.microsoft.com/api/stac/v1/collections/sentinel-2-l2a"
+      },
+      {
+        "rel": "root",
+        "type": "application/json",
+        "href": "https://planetarycomputer.microsoft.com/api/stac/v1/"
+      },
+      {
+        "rel": "self",
+        "type": "application/geo+json",
+        "href": "https://planetarycomputer.microsoft.com/api/stac/v1/collections/sentinel-2-l2a/items/S2B_MSIL2A_20240313T050649_R019_T43PGQ_20240313T171334"
+      },
+      {
+        "rel": "license",
+        "href": "https://sentinel.esa.int/documents/247904/690755/Sentinel_Data_Legal_Notice"
+      },
+      {
+        "rel": "preview",
+        "href": "https://planetarycomputer.microsoft.com/api/data/v1/item/map?collection=sentinel-2-l2a&item=S2B_MSIL2A_20240313T050649_R019_T43PGQ_20240313T171334",
+        "title": "Map of item",
+        "type": "text/html"
+      }
+    ]
+  }
+]
