@@ -8,7 +8,7 @@
 </p>
 
 <p align="center"><strong>A small experiment in satellite imagery, transfer learning, and what happens when data crosses borders.</strong></p>
-<p align="center"><a href="website/dist/index.html">Website source</a> · <a href="#website-preview">Website screenshots</a> · <a href="docs/RUNNING.md">Full terminal guide</a> · <a href="results/experiment-01.md">Recorded results</a></p>
+<p align="center"><a href="https://greenbridge-smritis21.stillperch132.chatgpt.site">Hosted website</a> · <a href="website/dist/index.html">Website source</a> · <a href="#website-preview">Website screenshots</a> · <a href="docs/RUNNING.md">Full terminal guide</a> · <a href="results/experiment-01.md">Recorded results</a></p>
 
 ## The question
 
@@ -22,7 +22,7 @@ GreenBridge provides a terminal workflow to collect imagery, prepare spatially s
 
 The project website explains the question, method, first results, limitations and next steps. Its green, orange and blue palette matches vegetation, built-up land and water. The hero illustration is a schematic, not satellite data or a model prediction.
 
-[Open the local website](http://localhost:8766/) while its preview server is running. A hosted link will be added after deployment is approved. The complete buildless website is in [website/dist](website/dist).
+[Open the local website](http://localhost:8766/) while its preview server is running. [Open the hosted website](https://greenbridge-smritis21.stillperch132.chatgpt.site). The hosted version currently uses owner-only access, so it is not yet a public portfolio link. The complete buildless website is in [website/dist](website/dist).
 
 ### Homepage
 
