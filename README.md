@@ -1,50 +1,151 @@
 # GreenBridge
 
-Can a satellite-image classifier trained in the Netherlands generalise to India?
+Train in the Netherlands. Test in India. Measure what changes.
 
-A small, reproducible transfer-learning project comparing Rotterdam and Bengaluru. It trains a three-class classification head on frozen pretrained ResNet-18 features, then compares Dutch-only training with joint Dutch/Indian training on the same held-out test sets. This is an initial baseline, not full-network fine-tuning.
+GreenBridge is a terminal-based satellite image classification project for Rotterdam and Bengaluru. It downloads small Sentinel-2 true-colour crops, creates spatially separated patches, helps you review labels with Claude, trains two local classifiers, and writes measured results.
 
-**Status:** training pipeline ready; real local imagery and labels still need collecting. No accuracy or social-impact claims have been measured. The example manifest shows the format, not a usable dataset.
+## What uses Claude?
 
-## Start in Google Colab (recommended)
+Claude suggests image labels and can explain your final metrics. You enter your Anthropic API key in a hidden terminal prompt. It is not written to disk. You can also set ANTHROPIC_API_KEY yourself. Your image patches are sent to Anthropic only when you use `label --claude`; `report --claude` sends the metrics JSON. Each call uses your API credits. Limits and cached suggestions help control spending.
 
-Upload this project folder and your labelled data to a Colab session, change into its directory, and run:
+The classifier you train is a pretrained ResNet-18 with a new three-class head. Claude API credits pay for Claude calls, not local PyTorch training, and the project does not fine-tune Claude. Running local training needs no API key. No training or paid API calls were run during development.
 
-```python
-!pip install -r requirements.txt
-!python train.py --manifest data/manifest.csv --epochs 5
+## Windows terminal setup
+
+Use Python 3.12. If it is not installed, run the following, then open a new terminal:
+
+```powershell
+winget install --exact --id Python.Python.3.12
 ```
 
-The first run downloads pretrained weights. Training uses the CPU for an accessible baseline. Save the runs folder before your Colab session ends.
+For a fresh download:
 
-For local Windows use, create a Python 3.12 environment, then install requirements and run the same training command. The machine this project was prepared on has Python 3.15, outside the currently documented PyTorch Windows support range (3.10–3.14): https://pytorch.org/get-started/locally/
+```powershell
+git clone https://github.com/smritis21/GreenBridge.git
+cd GreenBridge
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --upgrade pip
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
 
-## Collect your first dataset
+If you already have this folder open in VS Code, run the setup commands starting at `py -3.12`. There is no need to activate the environment or change PowerShell execution policy. If your existing .venv uses Python 3.15, create `.venv312` instead and use that name in every command below.
 
-1. Open https://dataspace.copernicus.eu/browser/ and choose Sentinel-2 L2A true-colour imagery for Rotterdam and Bengaluru. Follow the source's access and attribution terms.
-2. Use cloud-free imagery, the same ground resolution, RGB rendering and patch ground footprint in both cities. A suggested start is 64 × 64 pixels at 10 m resolution. Keep scene IDs, acquisition dates, bounding boxes, processing settings and attribution in a separate provenance file.
-3. Collect patches dominated by vegetation, built-up surfaces, or water. Skip cloudy and ambiguous mixed patches. Target 30 training and 15 test examples per class per country for a pilot; this is too small for strong generalisation claims.
-4. Reserve geographically separate areas for testing BEFORE extracting patches. Never allow overlapping patches or alternate dates of the same location across train and test. Use a buffer between areas. A group is a spatial area, not an individual image or acquisition date.
-5. Save images under data/images/. Copy manifest.example.csv to data/manifest.csv and replace the example rows. Paths are relative to the manifest. Country is NL or IN; labels are vegetation, built_up, water; split is train or test. Include every class in each country/split.
+## 1. Download satellite imagery
 
-The loader checks exact duplicate image content and spatial-group leakage. It cannot detect nearby or overlapping locations: you must enforce geographical separation while collecting data. Hold the test sets fixed and do not choose settings using test results. Add a separate geographic validation set before tuning hyperparameters.
+```powershell
+.\.venv\Scripts\python.exe greenbridge.py fetch
+```
 
-## What you get
+The public Planetary Computer service supplies small RGB crops for both cities. No satellite API key is required. The default searches 2024 for scenes with less than 10 percent scene-wide cloud cover. That does not guarantee a cloud-free local crop. Check every patch. Source scene metadata is saved next to each image. Existing downloads with metadata are kept when you rerun fetch.
 
-- runs/nl_only.pt and runs/nl_plus_india.pt: trained model checkpoints.
-- runs/results.json: accuracy, macro F1 and confusion matrices for both countries, plus seed and manifest hash.
-- Matrix rows are actual classes; columns are predictions, in the reported class order.
+If no suitable scene covers an area, try another interval and output folder:
 
-Joint training starts from the identical initial model as Dutch-only training. The larger joint dataset means more optimizer steps per epoch: improvement cannot be attributed solely to cross-country diversity. A later experiment should add a matched-sample or matched-update control and repeat across seeds.
+```powershell
+.\.venv\Scripts\python.exe greenbridge.py fetch --dates "2023-01-01T00:00:00Z/2023-12-31T23:59:59Z" --output data/source2023
+```
 
-## Honest portfolio scope
+## 2. Prepare patches
 
-This detects dominant land cover in patches. It does not measure park access, tree canopy precisely, heat exposure, or where a park should be built. Two-city findings do not represent either whole country. Seasonal differences, image rendering and label quality may explain performance changes.
+```powershell
+.\.venv\Scripts\python.exe greenbridge.py prepare
+```
 
-After the first real run: inspect errors, repeat seeds, document dataset provenance, and add a map of held-out patch predictions. Publish measured results and limitations alongside the demo. Do not upload third-party imagery without checking redistribution rights.
+Default: 64 by 64 pixels, at most 90 patches per country per split. Training uses the left side of each image and testing the right side, with a two-patch gap. The manifest contains blank labels. The command refuses to replace an existing patch folder.
 
-## References
+For alternate source images use `--nl data/source2023/NL.png --india data/source2023/IN.png`. For a larger sample use `--limit 300 --output data/patches_large`, then pass that manifest to label, check and train.
 
-- Sentinel imagery access: https://documentation.dataspace.copernicus.eu/Applications/Browser.html
-- Optional introductory dataset (not a substitute for local labels): https://arxiv.org/abs/1709.00029
-- ResNet-18: https://docs.pytorch.org/vision/stable/models/generated/torchvision.models.resnet18.html
+## 3. Label with Claude help
+
+```powershell
+.\.venv\Scripts\python.exe greenbridge.py label --claude --limit 12
+```
+
+Enter your API key when prompted. An image preview opens and Claude suggests a class. Type your verified label: `v` for vegetation, `b` for built-up land, `w` for water, `s` for skip, or `q` to quit. Repeat the command to continue. Previously reviewed labels are kept and Claude suggestions are cached separately.
+
+Use `--no-preview` if you want to inspect image files yourself. Use `--model YOUR_MODEL_ID` or the CLAUDE_MODEL environment variable to select a model available in your Anthropic account. The default is `claude-sonnet-4-5`. An unavailable model or insufficient API credit will cause the API to reject the request.
+
+For manual labelling without any API calls:
+
+```powershell
+.\.venv\Scripts\python.exe greenbridge.py label --limit 30
+```
+
+Skip clouds, blank pixels, and ambiguous mixed patches. Confirm labels yourself. Claude suggestions are not ground truth. For a stronger study, label the test set independently without viewing Claude suggestions and have another person review it.
+
+## 4. Check your dataset
+
+```powershell
+.\.venv\Scripts\python.exe greenbridge.py check
+```
+
+Every country needs all three confirmed classes in both train and test. Aim for at least 30 training and 15 test patches per class per country for an initial pilot. That is still a small sample. Blank and skipped labels are excluded. Checks reject duplicate file content and spatial groups that cross split boundaries. They do not detect all geographic overlaps or validate whether your labels are correct.
+
+If a class is missing, label more patches. If the crop lacks that class, collect a larger area or use custom source crops and a new manifest. Do not relabel images just to fill a class.
+
+## 5. Train both models
+
+```powershell
+.\.venv\Scripts\python.exe train.py --epochs 5
+```
+
+The first run downloads pretrained weights. Training runs on CPU. It compares Dutch-only training against joint Dutch and Indian training, starting from identical initial weights. Outputs: `runs/nl_only.pt`, `runs/nl_plus_india.pt`, and `runs/results.json`.
+
+For a repeat with another seed, use a new output folder:
+
+```powershell
+.\.venv\Scripts\python.exe train.py --epochs 5 --seed 43 --output runs_seed43
+```
+
+Accuracy, macro F1 and confusion matrices are reported separately for NL and IN. Confusion-matrix rows are actual labels and columns are predictions. Class order is included in results.json. Results also record the manifest hash and run settings.
+
+## 6. Predict one image
+
+Replace the image path with one of your actual patches:
+
+```powershell
+.\.venv\Scripts\python.exe greenbridge.py predict --image data/patches/images/NL_0_0.png
+```
+
+The output gives a predicted label and class scores. Scores are not calibrated confidence. Use only checkpoints you created or trust.
+
+## 7. Create your report
+
+```powershell
+.\.venv\Scripts\python.exe greenbridge.py report
+```
+
+Optional Claude commentary:
+
+```powershell
+.\.venv\Scripts\python.exe greenbridge.py report --claude
+```
+
+The report is saved to `runs/report.md`. Claude commentary is explicitly labelled as AI generated. A plain report needs no API key.
+
+## Checks without running models
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -v
+```
+
+The tests cover spatial split preparation, duplicate detection, missing classes, unreviewed labels, Claude suggestion separation and measured report values. API calls are mocked. GitHub Actions runs these tests without API secrets or model training.
+
+## Scope and limits
+
+This is a runnable research prototype, not a validated planning tool. No trained weights, real labelled dataset or benchmark scores are supplied. Raw imagery, keys and model files are excluded from Git.
+
+The model detects dominant land cover in image patches. It does not measure park accessibility, precise canopy cover, heat exposure or where new parks should be built. Two city samples cannot represent whole countries. Seasonal differences, RGB rendering, label quality and spatial sampling can affect results.
+
+The joint dataset gives more optimiser steps per epoch than the Dutch-only dataset. Any improvement could reflect extra data or training, rather than cross-country diversity alone. Add matched-sample controls, a separate geographic validation set and multiple seeds before making strong claims. Do not tune settings against test results.
+
+Source images use geographic coordinates, but the first version produces patch predictions rather than a geographic map. The project includes no web app.
+
+## Data and API references
+
+- [Planetary Computer public data access](https://planetarycomputer.microsoft.com/docs/)
+- [Signing satellite assets](https://planetarycomputer.microsoft.com/docs/concepts/sas/)
+- [Claude Python SDK](https://platform.claude.com/docs/en/api/sdks/python)
+- [PyTorch installation](https://pytorch.org/get-started/locally/)
+- [EuroSAT background paper](https://arxiv.org/abs/1709.00029)
+
+Keep scene attribution and consult source data terms before redistributing imagery. Software dependencies and satellite data retain their own licences.

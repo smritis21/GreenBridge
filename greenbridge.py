@@ -3,7 +3,6 @@ import argparse
 import base64
 import csv
 import getpass
-import html
 import json
 import os
 from pathlib import Path
@@ -35,7 +34,10 @@ def fetch(args):
     for country, bbox in CITIES.items():
         target = args.output / f'{country}.png'
         if target.exists():
-            raise ValueError(f'{target} already exists; use a new output folder')
+            if target.with_suffix('.json').exists():
+                print(f'Keeping existing {target}')
+                continue
+            raise ValueError(f'{target} has no provenance file; choose a new --output folder')
         response = requests.post('https://planetarycomputer.microsoft.com/api/stac/v1/search',
             json={'collections': ['sentinel-2-l2a'], 'bbox': bbox,
                   'datetime': args.dates, 'limit': 30,
@@ -144,11 +146,13 @@ def label(args):
     suggestions = json.loads(suggestion_path.read_text()) if suggestion_path.exists() else {}
     client = None
     count = 0
+    attempts = 0
     for row in rows:
         if row['label'] in CLASSES + ['skip']:
             continue
-        if count >= args.limit:
+        if attempts >= args.limit:
             break
+        attempts += 1
         print(f'\n{row["path"]} | {row["country"]} | {row["split"]}')
         path = args.manifest.parent / row['path']
         if args.claude:
