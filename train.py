@@ -30,6 +30,8 @@ def read_manifest(path):
     for row in rows:
         if row['country'] not in ('NL', 'IN') or row['split'] not in ('train', 'test') or row['label'] not in CLASSES:
             raise ValueError('Invalid country, split, or label')
+        if row['split'] == 'test' and row.get('label_source') == 'claude':
+            raise ValueError('Test labels must be human reviewed')
         if not row.get('path'):
             raise ValueError('Manifest row is missing an image path')
 
@@ -128,6 +130,9 @@ def main():
                 'macro_f1': sum(f1) / 3, 'confusion_matrix': matrix.tolist()}
         torch.save({'state_dict': model.state_dict(), 'classes': CLASSES}, args.output / f'{name}.pt')
     report = {'seed': args.seed, 'epochs': args.epochs, 'classes': CLASSES,
+              'label_sources': {source: sum(r.get('label_source', 'human_legacy') == source for r in rows)
+                                for source in {r.get('label_source', 'human_legacy') for r in rows}},
+              'label_note': 'Training may use AI-generated labels. Test labels are human reviewed.',
               'manifest_sha256': hashlib.sha256(args.manifest.read_bytes()).hexdigest(), 'results': results}
     (args.output / 'results.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
     print(json.dumps(report, indent=2))

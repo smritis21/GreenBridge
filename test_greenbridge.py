@@ -117,6 +117,32 @@ class WorkflowTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'No Sonnet'):
             gb.resolve_model(client, 'auto')
 
+    def test_auto_labels_only_blank_training_rows(self):
+        path, rows = self.manifest()
+        rows[0]['label'] = ''
+        rows[3]['label'] = ''
+        gb.write_csv(path, rows)
+        args = argparse.Namespace(manifest=path, limit=180, model='test')
+        with patch.object(gb, 'claude_client', return_value=object()), patch.object(
+                gb, 'ask_image', return_value={'label': 'vegetation', 'reason': 'green'}) as ask:
+            gb.auto_label(args)
+        with path.open() as stream:
+            saved = list(csv.DictReader(stream))
+        self.assertEqual(ask.call_count, 1)
+        self.assertEqual(saved[0]['label_source'], 'claude')
+        self.assertEqual(saved[3]['label'], '')
+        self.assertEqual(saved[1]['label'], rows[1]['label'])
+        with patch.object(gb, 'claude_client') as client:
+            gb.auto_label(args)
+            client.assert_not_called()
+
+    def test_ai_test_labels_are_rejected(self):
+        path, rows = self.manifest()
+        rows[3]['label_source'] = 'claude'
+        gb.write_csv(path, rows)
+        with self.assertRaisesRegex(ValueError, 'human reviewed'):
+            read_manifest(path)
+
     def test_report_uses_measured_values(self):
         data = {'results': {'nl_only': {'evaluation': {'IN': {'samples': 15, 'accuracy': 0.6, 'macro_f1': 0.5}}}}}
         source = self.root / 'results.json'

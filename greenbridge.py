@@ -14,6 +14,7 @@ FIELDS = ['path', 'country', 'label', 'split', 'group']
 
 
 def write_csv(path, rows, fields=FIELDS):
+    fields = list(dict.fromkeys(list(fields) + [key for row in rows for key in row if key != 'image']))
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix('.tmp')
     with temporary.open('w', newline='', encoding='utf-8') as stream:
@@ -165,6 +166,37 @@ def ask_image(client, model, path):
                      'Run label again to retry this patch, or omit --claude to label manually.')
 
 
+def auto_label(args):
+    with args.manifest.open(encoding='utf-8') as stream:
+        rows = list(csv.DictReader(stream))
+    cache_path = args.manifest.with_name('claude_suggestions.json')
+    cache = json.loads(cache_path.read_text()) if cache_path.exists() else {}
+    client = None
+    processed = 0
+    for row in rows:
+        if row['split'] != 'train' or row['label']:
+            continue
+        if processed >= args.limit:
+            break
+        if row['path'] not in cache:
+            if client is None:
+                client = claude_client()
+                args.model = resolve_model(client, args.model)
+            cache[row['path']] = {**ask_image(client, args.model, args.manifest.parent / row['path']),
+                                  'model': args.model}
+            cache_path.write_text(json.dumps(cache, indent=2), encoding='utf-8')
+        suggestion = cache[row['path']]
+        if suggestion.get('label') not in CLASSES + ['skip']:
+            raise ValueError('Invalid cached label')
+        row['label'] = suggestion['label']
+        row['label_source'] = 'claude'
+        row['label_model'] = suggestion.get('model', 'unknown')
+        write_csv(args.manifest, rows)
+        processed += 1
+        print(f'{row["country"]} {row["path"]}: {row["label"]} (AI generated)', flush=True)
+    print(f'Saved {processed} automatic training labels. Human labels and test images were kept.')
+
+
 def label(args):
     from PIL import Image
     with args.manifest.open(encoding='utf-8') as stream:
@@ -175,6 +207,8 @@ def label(args):
     count = 0
     attempts = 0
     for row in rows:
+        if getattr(args, 'split', 'all') != 'all' and row['split'] != args.split:
+            continue
         if row['label'] in CLASSES + ['skip']:
             continue
         if attempts >= args.limit:
@@ -200,6 +234,8 @@ def label(args):
         if answer not in {'v', 'b', 'w', 's'}:
             print('Invalid entry. Run label again to review this patch.')
             continue
+        row['label_source'] = 'human'
+        row['label_model'] = ''
         row['label'] = {'v': 'vegetation', 'b': 'built_up', 'w': 'water', 's': 'skip'}[answer]
         write_csv(args.manifest, rows)
         count += 1
@@ -266,9 +302,14 @@ def main():
     p.add_argument('--size', type=int, default=64)
     p.add_argument('--limit', type=int, default=90, help='Maximum patches per country per split')
     p.set_defaults(func=prepare)
+    p = commands.add_parser('auto-label', help='Use Claude for unlabelled training images only')
+    p.add_argument('--manifest', type=Path, default=Path('data/patches/manifest.csv'))
+    p.add_argument('--limit', type=int, default=60, help='Maximum training images this run; may use paid calls')
+    p.set_defaults(func=auto_label)
     p = commands.add_parser('label', help='Review labels, optionally with paid Claude suggestions')
     p.add_argument('--manifest', type=Path, default=Path('data/patches/manifest.csv'))
     p.add_argument('--limit', type=int, default=12, help='Maximum reviewed images this session')
+    p.add_argument('--split', choices=['all', 'train', 'test'], default='all')
     p.add_argument('--no-preview', action='store_true', help='Inspect files yourself instead of opening previews')
     p.add_argument('--claude', action='store_true', help='Send each reviewed patch to the paid API')
     p.set_defaults(func=label)
@@ -284,7 +325,7 @@ def main():
     p.add_argument('--output', type=Path, default=Path('runs/report.md'))
     p.add_argument('--claude', action='store_true', help='Send metrics to Claude for paid commentary')
     p.set_defaults(func=report)
-    for name in ('label', 'report'):
+    for name in ('label', 'report', 'auto-label'):
         commands.choices[name].add_argument('--model', default=os.environ.get('CLAUDE_MODEL', 'auto'))
     args = parser.parse_args()
     if hasattr(args, 'limit') and args.limit < 1:

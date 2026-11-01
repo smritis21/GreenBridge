@@ -30,6 +30,22 @@ py -3.12 -m venv .venv
 
 If you already have this folder open in VS Code, run the setup commands starting at `py -3.12`. There is no need to activate the environment or change PowerShell execution policy. If your existing .venv uses Python 3.15, create `.venv312` instead and use that name in every command below.
 
+## Faster workflow: let Claude label training images
+
+After fetch and prepare, run:
+
+```powershell
+.\.venv312\Scripts\python.exe greenbridge.py auto-label --limit 180
+.\.venv312\Scripts\python.exe greenbridge.py label --split test --limit 18
+.\.venv312\Scripts\python.exe greenbridge.py check
+.\.venv312\Scripts\python.exe train.py --epochs 5
+.\.venv312\Scripts\python.exe greenbridge.py report
+```
+
+The first command uses paid Claude calls and saves after every image. It processes only blank training labels, reuses cached suggestions, and preserves your existing labels and all test images. AI labels are marked in label_source and included in the training report metadata. Repeating the command resumes unfinished work. Claude skip results stay excluded.
+
+The second command shows only unreviewed test images, without Claude calls. Start with 18 reviews. Existing test labels count too. You need examples of every class in each country's test set, so 18 reviews may not be enough if water or another class is rare. Run check to find missing classes. Do not guess labels to fill gaps. This small test set is only a smoke test, not a reliable performance benchmark. AI training labels can be wrong and can transfer Claude's errors into your classifier.
+
 ## 1. Download satellite imagery
 
 ```powershell
