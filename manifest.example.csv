@@ -1,0 +1,3 @@
+path,country,label,split,group
+images/rotterdam_park_01.png,NL,vegetation,train,rotterdam-west
+images/bengaluru_lake_01.png,IN,water,test,bengaluru-east
