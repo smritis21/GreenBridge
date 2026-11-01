@@ -7,3 +7,4 @@ runs*/
 *.pt
 *.tif
 *.tiff
+.venv*/

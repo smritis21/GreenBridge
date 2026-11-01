@@ -62,7 +62,7 @@ For alternate source images use `--nl data/source2023/NL.png --india data/source
 
 Enter your API key when prompted. An image preview opens and Claude suggests a class. Type your verified label: `v` for vegetation, `b` for built-up land, `w` for water, `s` for skip, or `q` to quit. Repeat the command to continue. Previously reviewed labels are kept and Claude suggestions are cached separately.
 
-Use `--no-preview` if you want to inspect image files yourself. Use `--model YOUR_MODEL_ID` or the CLAUDE_MODEL environment variable to select a model available in your Anthropic account. The default is `claude-sonnet-4-5`. An unavailable model or insufficient API credit will cause the API to reject the request.
+Use `--no-preview` if you want to inspect image files yourself. Use `--model YOUR_MODEL_ID` or the CLAUDE_MODEL environment variable to select a model available in your Anthropic account. The default is `auto`, which selects the first available Sonnet from the API model list. Run `python greenbridge.py models` to list model IDs available to your key. An unavailable model or insufficient API credit will cause the API to reject the request.
 
 For manual labelling without any API calls:
 

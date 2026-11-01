@@ -81,6 +81,19 @@ class WorkflowTests(unittest.TestCase):
             self.assertEqual(next(csv.DictReader(stream))['label'], '')
         self.assertTrue((self.root / 'claude_suggestions.json').exists())
 
+    def test_auto_model_uses_available_sonnet(self):
+        from types import SimpleNamespace
+        client = SimpleNamespace(models=SimpleNamespace(list=lambda **kw: [
+            SimpleNamespace(id='claude-haiku-example'), SimpleNamespace(id='claude-sonnet-example')]))
+        self.assertEqual(gb.resolve_model(client, 'auto'), 'claude-sonnet-example')
+        self.assertEqual(gb.resolve_model(client, 'explicit-id'), 'explicit-id')
+
+    def test_auto_model_rejects_no_sonnet(self):
+        from types import SimpleNamespace
+        client = SimpleNamespace(models=SimpleNamespace(list=lambda **kw: []))
+        with self.assertRaisesRegex(ValueError, 'No Sonnet'):
+            gb.resolve_model(client, 'auto')
+
     def test_report_uses_measured_values(self):
         data = {'results': {'nl_only': {'evaluation': {'IN': {'samples': 15, 'accuracy': 0.6, 'macro_f1': 0.5}}}}}
         source = self.root / 'results.json'
