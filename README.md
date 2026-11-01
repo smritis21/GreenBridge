@@ -186,3 +186,7 @@ Do not keep repeating repair on the same urban crop. Add samples from a separate
 ```
 
 Supplement downloads imagery and adds blank training rows without using Claude. It preserves original labels and test patches, checks its bounding box against data/source/IN.json, and stores source metadata in supplement_source. It assumes the original default data/source layout. The supplemental area is a candidate for more varied land cover, not a guarantee of balanced classes. Automatic labels still require paid API calls. Rural training data changes the experiment: report it as Rotterdam plus Bengaluru and a nearby rural area, and keep urban test results separate. Repeating supplement with the same limit does not duplicate images.
+
+## Limited test coverage
+
+Training still requires every class in each country. A human-labelled test set may contain fewer classes for an initial pipeline check. The check prints a warning, and results record class counts and missing test classes. The report repeats the warning. Accuracy then describes only the reviewed examples, and macro F1 still averages all three classes (absent classes contribute zero). Do not present this as a full land-cover benchmark. This updates the stricter test-class requirement described earlier.

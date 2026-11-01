@@ -365,6 +365,12 @@ def report(args):
         for country, values in experiment['evaluation'].items():
             lines.append(f'| {name} | {country} | {values["samples"]} | '
                          f'{values["accuracy"]:.3f} | {values["macro_f1"]:.3f} |')
+    for name, experiment in data['results'].items():
+        for country, values in experiment['evaluation'].items():
+            missing = values.get('missing_test_classes', [])
+            if missing:
+                lines += ['', f'Coverage warning: {name}, {country} has no test examples for '
+                          f'{", ".join(missing)}. Treat this as a pipeline check, not a full benchmark.']
     lines += ['', '## Limits', '', 'Two city samples do not represent entire countries. '
               'Labels, seasons, cloud cover and unequal training sizes can affect results. '
               'This does not measure park access or recommend construction sites.']

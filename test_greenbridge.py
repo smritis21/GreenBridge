@@ -50,7 +50,7 @@ class WorkflowTests(unittest.TestCase):
 
     def test_missing_class_is_rejected(self):
         path, rows = self.manifest()
-        gb.write_csv(path, rows[:-1])
+        gb.write_csv(path, rows[1:])
         with self.assertRaisesRegex(ValueError, 'all three'):
             read_manifest(path)
 
@@ -186,6 +186,13 @@ class WorkflowTests(unittest.TestCase):
                             for r in saved[len(rows):]))
         self.assertEqual([r['path'] for r in rows if r['split'] == 'test'],
                          [r['path'] for r in saved if r['split'] == 'test'])
+
+    def test_partial_test_coverage_is_allowed_with_warning(self):
+        path, rows = self.manifest()
+        rows = [r for r in rows if not (r['country'] == 'IN' and r['split'] == 'test' and r['label'] != 'built_up')]
+        gb.write_csv(path, rows)
+        with self.assertWarnsRegex(UserWarning, 'only checks the pipeline'):
+            self.assertEqual(len(read_manifest(path)), 10)
 
     def test_report_uses_measured_values(self):
         data = {'results': {'nl_only': {'evaluation': {'IN': {'samples': 15, 'accuracy': 0.6, 'macro_f1': 0.5}}}}}

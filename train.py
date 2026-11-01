@@ -5,6 +5,7 @@ import csv
 import hashlib
 import json
 import random
+import warnings
 from pathlib import Path
 
 CLASSES = ['vegetation', 'built_up', 'water']
@@ -52,8 +53,14 @@ def read_manifest(path):
         row['image'] = image
     for country in ('NL', 'IN'):
         for split in ('train', 'test'):
-            if {r['label'] for r in rows if r['country'] == country and r['split'] == split} != set(CLASSES):
+            present = {r['label'] for r in rows if r['country'] == country and r['split'] == split}
+            if split == 'train' and present != set(CLASSES):
                 raise ValueError(f'Need all three classes in {country}/{split}')
+            if split == 'test' and not present:
+                raise ValueError(f'Need at least one human-labelled image in {country}/test')
+            if split == 'test' and present != set(CLASSES):
+                warnings.warn(f'{country}/test is missing {sorted(set(CLASSES) - present)}. '
+                              'This only checks the pipeline, not performance across all classes.')
     return rows
 
 
@@ -126,6 +133,8 @@ def main():
                         matrix[actual, predicted] += 1
             f1 = [2 * matrix[i, i].item() / max(1, (matrix[i, :].sum() + matrix[:, i].sum()).item()) for i in range(3)]
             results[name]['evaluation'][country] = {
+                'class_support': {CLASSES[i]: matrix[i, :].sum().item() for i in range(3)},
+                'missing_test_classes': [CLASSES[i] for i in range(3) if matrix[i, :].sum().item() == 0],
                 'samples': len(test), 'accuracy': matrix.diag().sum().item() / len(test),
                 'macro_f1': sum(f1) / 3, 'confusion_matrix': matrix.tolist()}
         torch.save({'state_dict': model.state_dict(), 'classes': CLASSES}, args.output / f'{name}.pt')
