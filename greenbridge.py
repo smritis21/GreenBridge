@@ -299,6 +299,10 @@ def label(args):
     count = 0
     attempts = 0
     for row in rows:
+        if getattr(args, 'country', 'all') != 'all' and row['country'] != args.country:
+            continue
+        if getattr(args, 'image', None) and Path(row['path']).name != args.image:
+            continue
         if getattr(args, 'split', 'all') != 'all' and row['split'] != args.split:
             continue
         if row['label'] in CLASSES + ['skip']:
@@ -410,6 +414,8 @@ def main():
     p = commands.add_parser('label', help='Review labels, optionally with paid Claude suggestions')
     p.add_argument('--manifest', type=Path, default=Path('data/patches/manifest.csv'))
     p.add_argument('--limit', type=int, default=12, help='Maximum reviewed images this session')
+    p.add_argument('--country', choices=['all', 'NL', 'IN'], default='all')
+    p.add_argument('--image', help='Review a specific unlabelled image filename')
     p.add_argument('--split', choices=['all', 'train', 'test'], default='all')
     p.add_argument('--no-preview', action='store_true', help='Inspect files yourself instead of opening previews')
     p.add_argument('--claude', action='store_true', help='Send each reviewed patch to the paid API')
