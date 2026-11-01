@@ -8,7 +8,7 @@
 </p>
 
 <p align="center"><strong>A small experiment in satellite imagery, transfer learning, and what happens when data crosses borders.</strong></p>
-<p align="center"><a href="https://smritis21.github.io/GreenBridge/">GitHub Pages website</a> · <a href="index.html">Website source</a> · <a href="#website-preview">Website screenshots</a> · <a href="docs/RUNNING.md">Full terminal guide</a> · <a href="results/experiment-01.md">Recorded results</a></p>
+<p align="center"><a href="https://smritis21.github.io/GreenBridge/">GitHub Pages website</a> · <a href="#website-preview">Website screenshots</a> · <a href="docs/RUNNING.md">Full terminal guide</a> · <a href="results/experiment-01.md">Recorded results</a></p>
 
 ## The question
 
