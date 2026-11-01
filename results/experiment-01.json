@@ -1,0 +1,146 @@
+{
+  "seed": 42,
+  "epochs": 5,
+  "classes": [
+    "vegetation",
+    "built_up",
+    "water"
+  ],
+  "label_sources": {
+    "": 23,
+    "claude": 201,
+    "human": 18
+  },
+  "label_note": "Training may use AI-generated labels. Test labels are human reviewed.",
+  "manifest_sha256": "d93f4fb0a7513316fe5166397d5a4f4f70a6cfd3376e4f4deeea1a5edd22e3a0",
+  "results": {
+    "nl_only": {
+      "training_samples": 83,
+      "evaluation": {
+        "NL": {
+          "class_support": {
+            "vegetation": 21,
+            "built_up": 3,
+            "water": 1
+          },
+          "missing_test_classes": [],
+          "samples": 25,
+          "accuracy": 0.76,
+          "macro_f1": 0.4625199362041467,
+          "confusion_matrix": [
+            [
+              16,
+              5,
+              0
+            ],
+            [
+              0,
+              3,
+              0
+            ],
+            [
+              1,
+              0,
+              0
+            ]
+          ]
+        },
+        "IN": {
+          "class_support": {
+            "vegetation": 0,
+            "built_up": 3,
+            "water": 0
+          },
+          "missing_test_classes": [
+            "vegetation",
+            "water"
+          ],
+          "samples": 3,
+          "accuracy": 1.0,
+          "macro_f1": 0.3333333333333333,
+          "confusion_matrix": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              3,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ]
+          ]
+        }
+      }
+    },
+    "nl_plus_india": {
+      "training_samples": 214,
+      "evaluation": {
+        "NL": {
+          "class_support": {
+            "vegetation": 21,
+            "built_up": 3,
+            "water": 1
+          },
+          "missing_test_classes": [],
+          "samples": 25,
+          "accuracy": 0.68,
+          "macro_f1": 0.3843700159489633,
+          "confusion_matrix": [
+            [
+              15,
+              6,
+              0
+            ],
+            [
+              1,
+              2,
+              0
+            ],
+            [
+              1,
+              0,
+              0
+            ]
+          ]
+        },
+        "IN": {
+          "class_support": {
+            "vegetation": 0,
+            "built_up": 3,
+            "water": 0
+          },
+          "missing_test_classes": [
+            "vegetation",
+            "water"
+          ],
+          "samples": 3,
+          "accuracy": 1.0,
+          "macro_f1": 0.3333333333333333,
+          "confusion_matrix": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              3,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ]
+          ]
+        }
+      }
+    }
+  }
+}
