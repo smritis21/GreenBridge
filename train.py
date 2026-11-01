@@ -14,7 +14,8 @@ def read_manifest(path):
     if not path.exists():
         raise FileNotFoundError(f'Manifest not found: {path}')
 
-    rows = list(csv.DictReader(path.open(encoding='utf-8')))
+    with path.open(encoding='utf-8') as stream:
+        rows = list(csv.DictReader(stream))
     if not rows:
         raise ValueError(f'Manifest is empty: {path}')
 
@@ -23,6 +24,8 @@ def read_manifest(path):
     if missing:
         raise ValueError(f'Manifest missing required columns: {sorted(missing)}')
 
+    # Unreviewed and explicitly skipped images never enter training or evaluation.
+    rows = [r for r in rows if r['label'] not in ('', 'skip')]
     seen, groups = set(), {}
     for row in rows:
         if row['country'] not in ('NL', 'IN') or row['split'] not in ('train', 'test') or row['label'] not in CLASSES:
@@ -30,14 +33,11 @@ def read_manifest(path):
         if not row.get('path'):
             raise ValueError('Manifest row is missing an image path')
 
-        image = None
-        for base in (path.parent.resolve(), path.parent.parent.resolve(), Path.cwd().resolve()):
-            candidate = (base / row['path']).resolve()
-            if candidate.exists() and candidate.is_file():
-                image = candidate
-                break
-        if image is None:
-            raise FileNotFoundError(f'Image not found for {row["path"]} (relative to {path.parent})')
+        if not row.get('group', '').strip():
+            raise ValueError('Every image needs a spatial group')
+        image = (path.parent / row['path']).resolve()
+        if not image.is_file():
+            raise FileNotFoundError(f'Image not found: {image}')
 
         digest = hashlib.sha256(image.read_bytes()).hexdigest()
         if digest in seen:
@@ -57,7 +57,7 @@ def read_manifest(path):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--manifest', type=Path, default=Path('data/manifest.csv'))
+    parser.add_argument('--manifest', type=Path, default=Path('data/patches/manifest.csv'))
     parser.add_argument('--epochs', type=int, default=5)
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--output', type=Path, default=Path('runs'))
@@ -91,6 +91,8 @@ def main():
     for p in base.parameters():
         p.requires_grad = False
     base.fc = torch.nn.Linear(base.fc.in_features, len(CLASSES))
+    if (args.output / 'results.json').exists():
+        parser.error('Results already exist. Choose a new --output folder.')
     args.output.mkdir(parents=True, exist_ok=True)
     results = {}
     for name, countries in [('nl_only', ['NL']), ('nl_plus_india', ['NL', 'IN'])]:

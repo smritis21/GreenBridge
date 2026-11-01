@@ -1,4 +1,9 @@
 .venv/
 __pycache__/
 data/
-runs/
+runs*/
+.env
+.env.*
+*.pt
+*.tif
+*.tiff
