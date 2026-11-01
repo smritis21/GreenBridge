@@ -22,7 +22,7 @@ GreenBridge provides a terminal workflow to collect imagery, prepare spatially s
 
 The project website explains the question, method, first results, limitations and next steps. Its green, orange and blue palette matches vegetation, built-up land and water. The hero illustration is a schematic, not satellite data or a model prediction.
 
-[Open the local website](http://localhost:8766/) while its preview server is running. The website is ready for GitHub Pages at [smritis21.github.io/GreenBridge](https://smritis21.github.io/GreenBridge/), once Pages is enabled. Its entry point is [index.html](index.html) in the repository root.
+[Open the local website](http://localhost:8766/) while its preview server is running. Visit the live website: **[smritis21.github.io/GreenBridge](https://smritis21.github.io/GreenBridge/)**. Its entry point is [index.html](index.html) in the repository root.
 
 ### Homepage
 
@@ -86,7 +86,7 @@ Open [localhost:8766](http://localhost:8766/). The website is static HTML and CS
 
 ### Host with GitHub Pages
 
-In the repository settings, open **Pages**, select **Deploy from a branch**, then choose **main** and **/ (root)**. Save the setting. After GitHub deploys it, the website will be available at https://smritis21.github.io/GreenBridge/.
+In the repository settings, open **Pages**, select **Deploy from a branch**, then choose **main** and **/ (root)**. Save the setting. The live website is [smritis21.github.io/GreenBridge](https://smritis21.github.io/GreenBridge/).
 
 The site uses relative asset paths, so it works under the GreenBridge repository URL. No build step or API key is needed.
 
