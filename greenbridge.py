@@ -33,7 +33,8 @@ def fetch(args):
     from rasterio.warp import transform_bounds
     from PIL import Image
     args.output.mkdir(parents=True, exist_ok=True)
-    for country, bbox in CITIES.items():
+    areas = {args.country: args.bbox} if getattr(args, 'country', None) else CITIES
+    for country, bbox in areas.items():
         target = args.output / f'{country}.png'
         if target.exists():
             if target.with_suffix('.json').exists():
@@ -167,6 +168,42 @@ def ask_image(client, model, path):
                 print('Claude reply was incomplete or invalid. Retrying once with a larger reply limit.')
     raise ValueError('Claude did not return a complete label after two attempts. Previous labels are saved. '
                      'Run label again to retry this patch, or omit --claude to label manually.')
+
+
+def supplement(args):
+    """Add training samples from a separate rural area near Bengaluru."""
+    from PIL import Image
+    # This area is west of the original Bengaluru test and training crop.
+    bbox = (77.25, 12.80, 77.40, 12.90)
+    provenance = json.loads(args.manifest.with_name('provenance.json').read_text())
+    metadata = next(item.get('metadata') for item in provenance if item['country'] == 'IN')
+    if not metadata or 'bbox_wgs84' not in metadata:
+        raise ValueError('Original Indian source bounding box is required in provenance.json')
+    original = metadata['bbox_wgs84']
+    if not (bbox[2] < original[0] or bbox[0] > original[2] or bbox[3] < original[1] or bbox[1] > original[3]):
+        raise ValueError('Supplemental area overlaps the original area')
+    source_dir = args.manifest.parent / 'supplement_source'
+    fetch(argparse.Namespace(output=source_dir, dates='2024-01-01T00:00:00Z/2024-12-31T23:59:59Z',
+                             country='IN', bbox=bbox))
+    with args.manifest.open(encoding='utf-8') as stream:
+        rows = list(csv.DictReader(stream))
+    existing = {r['path'] for r in rows}
+    with Image.open(source_dir / 'IN.png') as source:
+        image = source.convert('RGB')
+        coordinates = [(x, y) for y in range(0, image.height - 63, 64)
+                       for x in range(0, image.width - 63, 64)]
+        random.Random(42).shuffle(coordinates)
+        added = 0
+        for x, y in coordinates[:args.limit]:
+            name = f'images/IN_rural_{x}_{y}.png'
+            if name in existing:
+                continue
+            image.crop((x, y, x + 64, y + 64)).save(args.manifest.parent / name)
+            rows.append(dict(path=name, country='IN', label='', split='train', group='IN-rural-train'))
+            added += 1
+    write_csv(args.manifest, rows)
+    print(f'Added {added} unlabelled Indian training patches from a separate area. '
+          'Run auto-label next. Original labels and test images were kept.')
 
 
 def repair(args):
@@ -357,6 +394,10 @@ def main():
     p.add_argument('--size', type=int, default=64)
     p.add_argument('--limit', type=int, default=90, help='Maximum patches per country per split')
     p.set_defaults(func=prepare)
+    p = commands.add_parser('supplement', help='Add Indian training patches from a separate rural area')
+    p.add_argument('--manifest', type=Path, default=Path('data/patches/manifest.csv'))
+    p.add_argument('--limit', type=int, default=60)
+    p.set_defaults(func=supplement)
     p = commands.add_parser('repair', help='Search the full source for missing training classes with Claude')
     p.add_argument('--manifest', type=Path, default=Path('data/patches/manifest.csv'))
     p.add_argument('--limit', type=int, default=40, help='Maximum paid image requests per country, excluding retries')

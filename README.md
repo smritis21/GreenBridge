@@ -175,3 +175,14 @@ Keep scene attribution and consult source data terms before redistributing image
 This searches unused patches across the original training half, in a fixed shuffled order. It keeps old labels and test patches unchanged. It stops per country when every training class has at least five usable examples, or after 40 new candidates. These are paid Claude image requests, with one retry possible per image. It saves each patch and label immediately. It does not guarantee the original image contains enough water or vegetation. If the target is not reached, inspect counts before spending more credits. Five examples only supports an initial smoke test.
 
 New prepare runs also sample across the full source instead of taking the top rows first.
+
+## If Indian training patches are all built-up
+
+Do not keep repeating repair on the same urban crop. Add samples from a separate area west of the original Bengaluru crop:
+
+```powershell
+.\.venv312\Scripts\python.exe greenbridge.py supplement --limit 60
+.\.venv312\Scripts\python.exe greenbridge.py auto-label --limit 60
+```
+
+Supplement downloads imagery and adds blank training rows without using Claude. It preserves original labels and test patches, checks its bounding box against data/source/IN.json, and stores source metadata in supplement_source. It assumes the original default data/source layout. The supplemental area is a candidate for more varied land cover, not a guarantee of balanced classes. Automatic labels still require paid API calls. Rural training data changes the experiment: report it as Rotterdam plus Bengaluru and a nearby rural area, and keep urban test results separate. Repeating supplement with the same limit does not duplicate images.

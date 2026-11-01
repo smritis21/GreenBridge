@@ -166,6 +166,27 @@ class WorkflowTests(unittest.TestCase):
                          [r['path'] for r in after if r['split'] == 'test'])
         self.assertTrue(all(r['split'] == 'train' for r in after[len(before):]))
 
+    def test_supplement_keeps_test_rows_and_is_repeatable(self):
+        from PIL import Image
+        manifest, rows = self.manifest()
+        (self.root / 'images').mkdir()
+        (self.root / 'provenance.json').write_text(json.dumps([
+            {'country': 'IN', 'metadata': {'bbox_wgs84': [77.52, 12.90, 77.67, 13.00]}}]))
+        def fake_fetch(args):
+            args.output.mkdir(exist_ok=True)
+            Image.new('RGB', (256, 256), 'green').save(args.output / 'IN.png')
+        args = argparse.Namespace(manifest=manifest, limit=3)
+        with patch.object(gb, 'fetch', side_effect=fake_fetch):
+            gb.supplement(args)
+            gb.supplement(args)
+        with manifest.open() as stream:
+            saved = list(csv.DictReader(stream))
+        self.assertEqual(len(saved), len(rows) + 3)
+        self.assertTrue(all(r['country'] == 'IN' and r['split'] == 'train' and r['label'] == ''
+                            for r in saved[len(rows):]))
+        self.assertEqual([r['path'] for r in rows if r['split'] == 'test'],
+                         [r['path'] for r in saved if r['split'] == 'test'])
+
     def test_report_uses_measured_values(self):
         data = {'results': {'nl_only': {'evaluation': {'IN': {'samples': 15, 'accuracy': 0.6, 'macro_f1': 0.5}}}}}
         source = self.root / 'results.json'
