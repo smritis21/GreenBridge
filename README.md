@@ -8,7 +8,7 @@
 </p>
 
 <p align="center"><strong>A small experiment in satellite imagery, transfer learning, and what happens when data crosses borders.</strong></p>
-<p align="center"><a href="https://greenbridge-smritis21.stillperch132.chatgpt.site">Hosted website</a> · <a href="website/dist/index.html">Website source</a> · <a href="#website-preview">Website screenshots</a> · <a href="docs/RUNNING.md">Full terminal guide</a> · <a href="results/experiment-01.md">Recorded results</a></p>
+<p align="center"><a href="https://smritis21.github.io/GreenBridge/">GitHub Pages website</a> · <a href="index.html">Website source</a> · <a href="#website-preview">Website screenshots</a> · <a href="docs/RUNNING.md">Full terminal guide</a> · <a href="results/experiment-01.md">Recorded results</a></p>
 
 ## The question
 
@@ -22,7 +22,7 @@ GreenBridge provides a terminal workflow to collect imagery, prepare spatially s
 
 The project website explains the question, method, first results, limitations and next steps. Its green, orange and blue palette matches vegetation, built-up land and water. The hero illustration is a schematic, not satellite data or a model prediction.
 
-[Open the local website](http://localhost:8766/) while its preview server is running. [Open the hosted website](https://greenbridge-smritis21.stillperch132.chatgpt.site). The hosted version currently uses owner-only access, so it is not yet a public portfolio link. The complete buildless website is in [website/dist](website/dist).
+[Open the local website](http://localhost:8766/) while its preview server is running. The website is ready for GitHub Pages at [smritis21.github.io/GreenBridge](https://smritis21.github.io/GreenBridge/), once Pages is enabled. Its entry point is [index.html](index.html) in the repository root.
 
 ### Homepage
 
@@ -79,10 +79,16 @@ The full download, labelling, training and prediction commands are in the [termi
 ### View the website locally
 
 ```powershell
-.\.venv312\Scripts\python.exe -m http.server 8766 --bind 127.0.0.1 --directory website/dist
+.\.venv312\Scripts\python.exe -m http.server 8766 --bind 127.0.0.1 --directory .
 ```
 
 Open [localhost:8766](http://localhost:8766/). The website is static HTML and CSS and needs no API key or build step. Stop the server with Ctrl+C. The design uses Google Fonts when available and system fonts otherwise.
+
+### Host with GitHub Pages
+
+In the repository settings, open **Pages**, select **Deploy from a branch**, then choose **main** and **/ (root)**. Save the setting. After GitHub deploys it, the website will be available at https://smritis21.github.io/GreenBridge/.
+
+The site uses relative asset paths, so it works under the GreenBridge repository URL. No build step or API key is needed.
 
 ### Run checks without model training
 
@@ -115,7 +121,9 @@ Sixteen tests currently cover spatial separation, duplicate detection, label han
 greenbridge.py       Terminal workflow and Claude integration
 train.py             Two-model training and evaluation
 test_greenbridge.py  Checks without paid API calls
-website/dist/        Static project website
+index.html           GitHub Pages entry point
+style.css            Website styles
+landscape.svg        Website illustration
 assets/              README banner and actual website screenshots
 results/             Recorded first experiment, without model weights
 docs/RUNNING.md      Detailed terminal instructions
